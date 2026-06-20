@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-from redrob import io as cio, baseline as B, silver, evalmetrics as M  # noqa: E402
+from redrob import io as cio, baseline as B, silver, trust, evalmetrics as M  # noqa: E402
 from redrob.jobspec import JobSpec  # noqa: E402
 
 
@@ -49,10 +49,11 @@ def main():
         avail, _ = B.availability(sig, ref)
         bf = B.band_fit(prof.get("years_of_experience"), spec)
         loc = B.location_fit(prof, sig, spec)
-        dmult, _ = B.disqualifier_mult(hist, narrative_l, spec)
+        ts = trust.signals(c, spec)
         hp = B.is_honeypot(c)
         sem = sem_pct.get(cid, 0.0)
-        Mmult = bf * (0.85 + 0.15 * loc) * dmult * avail * (0.02 if hp else 1.0)
+        Mmult = (ts["focus_factor"] * bf * (0.85 + 0.15 * loc) * ts["penalty"]
+                 * avail * (0.02 if hp else 1.0))
         A = (0.55 * lex + 0.45 * coh) * Mmult
         Bc = 0.55 * (sem - lex) * Mmult
         recs.append((cid, A, Bc))

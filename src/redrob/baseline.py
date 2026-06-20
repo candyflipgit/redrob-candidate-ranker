@@ -18,6 +18,7 @@ from collections import namedtuple
 from datetime import date
 
 from . import io as cio
+from . import trust
 from .jobspec import JobSpec
 
 # Stuffer "tell": summaries stitched from a different role than the profile.
@@ -87,21 +88,6 @@ def location_fit(profile: dict, sig: dict, spec: JobSpec) -> float:
     return 0.45
 
 
-def disqualifier_mult(hist: list, narrative_l: str, spec: JobSpec):
-    mult, flags = 1.0, []
-    svc = spec.disqualifiers.get("services_only")
-    if svc:
-        comps = [(h.get("company") or "").lower() for h in hist]
-        if comps and all(any(s in c for s in svc) for c in comps):
-            mult *= 0.6
-            flags.append("services_only")
-    wd = spec.disqualifiers.get("wrong_domain")
-    if wd and any(t in narrative_l for t in wd) and not _present(spec.must_have_terms, narrative_l):
-        mult *= 0.7
-        flags.append("wrong_domain")
-    return mult, flags
-
-
 def is_honeypot(c: dict) -> bool:
     """Universal logical-impossibility checks (the refined keepers; the
     work-before-education rule was dropped as a false-positive generator)."""
@@ -127,7 +113,7 @@ def is_honeypot(c: dict) -> bool:
     return expert_zero >= 5
 
 
-SEM_WEIGHT = 0.1   # semantic share of alignment (tuned on the gold-anchored harness)
+SEM_WEIGHT = 0.2   # semantic share of alignment (tuned jointly with the trust layer)
 
 def score_candidate(c: dict, spec: JobSpec, ref_date: date,
                     semantic_pct: float | None = None,
@@ -138,24 +124,23 @@ def score_candidate(c: dict, spec: JobSpec, ref_date: date,
     narrative_l = cio.narrative_text(c).lower()
 
     align_lex, must, nice = alignment(narrative_l, spec)
-    # Blend lexical term-signal with semantic percentile. On THIS pool the elite
-    # fits use explicit JD vocabulary, so lexical dominates; gold-anchored eval
-    # showed higher semantic weights HURT top precision by promoting keyword-
-    # bearing but off-career generalists (CV/services profiles with IR skills) —
-    # the claim-vs-evidence trap, now in embedding space. We keep a small weight
-    # for cross-JD recall robustness; the generalists are handled in the trust/
-    # coherence layer, after which this weight is re-tuned jointly.
+    # Blend lexical term-signal with semantic percentile. Earlier, semantic
+    # promoted keyword-bearing off-career generalists (CV/services with IR
+    # skills) and hurt precision; once the trust layer demotes them, semantic is
+    # net-positive again. Joint gold-anchored tuning puts the optimum at ~0.2.
     align = ((1 - sem_weight) * align_lex + sem_weight * semantic_pct
              if semantic_pct is not None else align_lex)
     coh = coherence(prof, hist, spec)
     avail, recency_days = availability(sig, ref_date)
     bf = band_fit(prof.get("years_of_experience"), spec)
     loc = location_fit(prof, sig, spec)
-    disq_mult, disq_flags = disqualifier_mult(hist, narrative_l, spec)
+    ts = trust.signals(c, spec)        # graded wrong-domain / services / IR-focus
     hp = is_honeypot(c)
 
-    fit = 0.55 * align + 0.45 * coh
-    base = fit * bf * (0.85 + 0.15 * loc) * disq_mult
+    # focus_factor boosts genuine-IR careers; penalty demotes cv/services
+    # generalists who carry IR keywords but not IR careers.
+    fit = (0.55 * align + 0.45 * coh) * ts["focus_factor"]
+    base = fit * bf * (0.85 + 0.15 * loc) * ts["penalty"]
     final = base * avail * (0.02 if hp else 1.0)
 
     return Scored(
@@ -165,7 +150,7 @@ def score_candidate(c: dict, spec: JobSpec, ref_date: date,
         must_hits=len(must), nice_hits=len(nice), top_terms=must[:4],
         coherence=round(coh, 3), response=sig.get("recruiter_response_rate"),
         recency_days=recency_days, band_fit=round(bf, 3), honeypot=hp,
-        location=loc, disq=disq_flags,
+        location=loc, disq=ts["flags"],
         semantic=round(semantic_pct, 3) if semantic_pct is not None else None)
 
 

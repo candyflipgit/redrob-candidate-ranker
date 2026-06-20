@@ -1,0 +1,81 @@
+title: Senior AI Engineer — Founding Team
+role_terms:
+- ai engineer
+- engineer
+must_have_terms:
+- retrieval
+- ranking
+- hybrid search
+- embeddings
+- embedding
+- transformer
+- sentence-transformers
+- pinecone
+- weaviate
+- qdrant
+- milvus
+- faiss
+- elasticsearch
+- opensearch
+- vector database
+- bge
+- e5
+- ndcg
+- mrr
+- a/b test
+- evaluation framework
+- offline-to-online
+- python
+- production
+- hybrid
+- re-ranking
+- hybrid retrieval
+- matching system
+- eval framework
+nice_to_have_terms:
+- recommendation
+- nlp
+- llm
+- fine-tuning
+- lora
+- qlora
+- peft
+- rag
+- xgboost
+- distributed systems
+- inference
+disqualifiers:
+  services_only:
+  - tcs
+  - infosys
+  - wipro
+  - accenture
+  - cognizant
+  - capgemini
+  - consulting firm
+  research_only:
+  - research-only
+  - pure research
+  - academic
+  framework_only:
+  - langchain
+  - framework enthusiast
+  - tutorials
+  wrong_domain:
+  - computer vision
+  - speech
+  - robotics
+  title_chaser: []
+min_years: 5.0
+max_years: 9.0
+ideal_years: 7.0
+locations:
+- pune
+- noida
+- hyderabad
+- mumbai
+- delhi ncr
+relocate_ok: true
+work_modes:
+- hybrid
+- flexible

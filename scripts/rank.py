@@ -15,7 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-from redrob import baseline  # noqa: E402
+from redrob import baseline, reasoning  # noqa: E402
+from redrob import io as cio  # noqa: E402
 from redrob.jobspec import JobSpec  # noqa: E402
 
 
@@ -40,12 +41,22 @@ def main():
     top, ref, used_emb = baseline.rank_pool(_resolve(args.candidates), spec,
                                             args.top, artifacts_dir=artifacts)
 
+    # fetch the full records for the top-N to write grounded reasoning
+    top_ids = {s.cid for s in top}
+    cand = {}
+    for c in cio.iter_candidates(_resolve(args.candidates)):
+        if c["candidate_id"] in top_ids:
+            cand[c["candidate_id"]] = c
+            if len(cand) == len(top_ids):
+                break
+
     out = Path(args.out)
     with open(out, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["candidate_id", "rank", "score", "reasoning"])
         for i, s in enumerate(top, 1):
-            w.writerow([s.cid, i, f"{s.score:.6f}", baseline.reasoning(s)])
+            w.writerow([s.cid, i, f"{s.score:.6f}",
+                        reasoning.generate(cand[s.cid], s, spec, i)])
 
     dt = time.time() - t0
     mode = "hybrid (lexical+semantic)" if used_emb else "lexical-only (no artifacts)"

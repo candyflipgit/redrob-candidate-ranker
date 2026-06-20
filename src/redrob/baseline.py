@@ -69,7 +69,11 @@ def availability(sig: dict, ref_date: date):
     open_w = 1.0 if sig.get("open_to_work_flag") else 0.0
     verified = 0.5 * (bool(sig.get("verified_email")) + bool(sig.get("verified_phone")))
     base = 0.45 * r + 0.35 * recency_factor + 0.15 * open_w + 0.05 * verified
-    return 0.40 + 0.70 * base, recency_days  # multiplier in ~[0.40, 1.10]
+    # Gentle modifier ~[0.70, 1.10]: fit is the primary signal, availability a
+    # secondary nudge. An aggressive penalty (we tried 0.40-1.10) demoted strong
+    # fits and cost ~1 composite point on the (fit-based) gold harness; the JD
+    # asks to down-weight ghosts "appropriately", not to near-halve them.
+    return 0.70 + 0.40 * base, recency_days
 
 
 def band_fit(yoe, spec: JobSpec) -> float:

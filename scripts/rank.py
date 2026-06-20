@@ -30,11 +30,15 @@ def main():
     ap.add_argument("--spec", default="job_spec.yaml")
     ap.add_argument("--out", default="submission.csv")
     ap.add_argument("--top", type=int, default=100)
+    ap.add_argument("--artifacts", default="artifacts",
+                    help="dir with precomputed embeddings; '' to force lexical-only")
     args = ap.parse_args()
 
     spec = JobSpec.from_yaml(_resolve(args.spec))
+    artifacts = _resolve(args.artifacts) if args.artifacts else None
     t0 = time.time()
-    top, ref = baseline.rank_pool(_resolve(args.candidates), spec, args.top)
+    top, ref, used_emb = baseline.rank_pool(_resolve(args.candidates), spec,
+                                            args.top, artifacts_dir=artifacts)
 
     out = Path(args.out)
     with open(out, "w", encoding="utf-8", newline="") as f:
@@ -44,7 +48,8 @@ def main():
             w.writerow([s.cid, i, f"{s.score:.6f}", baseline.reasoning(s)])
 
     dt = time.time() - t0
-    print(f"wrote {len(top)} rows -> {out}  in {dt:.1f}s  (pool ref date {ref})")
+    mode = "hybrid (lexical+semantic)" if used_emb else "lexical-only (no artifacts)"
+    print(f"wrote {len(top)} rows -> {out}  in {dt:.1f}s  ({mode}, ref {ref})")
     print("top 5:")
     for i, s in enumerate(top[:5], 1):
         print(f"  {i:>3}. {s.cid}  score={s.score:.4f}  [{s.title}, "

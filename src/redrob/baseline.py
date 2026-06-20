@@ -32,7 +32,7 @@ _ML_ROLE = re.compile(
 Scored = namedtuple(
     "Scored",
     "score cid title yoe must_hits nice_hits top_terms coherence response "
-    "recency_days band_fit honeypot location disq")
+    "recency_days band_fit honeypot location disq semantic")
 
 
 def _present(terms, text_l):
@@ -127,13 +127,26 @@ def is_honeypot(c: dict) -> bool:
     return expert_zero >= 5
 
 
-def score_candidate(c: dict, spec: JobSpec, ref_date: date) -> Scored:
+SEM_WEIGHT = 0.1   # semantic share of alignment (tuned on the gold-anchored harness)
+
+def score_candidate(c: dict, spec: JobSpec, ref_date: date,
+                    semantic_pct: float | None = None,
+                    sem_weight: float = SEM_WEIGHT) -> Scored:
     prof = c.get("profile", {})
     hist = cio.career_history(c)
     sig = cio.signals(c)
     narrative_l = cio.narrative_text(c).lower()
 
-    align, must, nice = alignment(narrative_l, spec)
+    align_lex, must, nice = alignment(narrative_l, spec)
+    # Blend lexical term-signal with semantic percentile. On THIS pool the elite
+    # fits use explicit JD vocabulary, so lexical dominates; gold-anchored eval
+    # showed higher semantic weights HURT top precision by promoting keyword-
+    # bearing but off-career generalists (CV/services profiles with IR skills) —
+    # the claim-vs-evidence trap, now in embedding space. We keep a small weight
+    # for cross-JD recall robustness; the generalists are handled in the trust/
+    # coherence layer, after which this weight is re-tuned jointly.
+    align = ((1 - sem_weight) * align_lex + sem_weight * semantic_pct
+             if semantic_pct is not None else align_lex)
     coh = coherence(prof, hist, spec)
     avail, recency_days = availability(sig, ref_date)
     bf = band_fit(prof.get("years_of_experience"), spec)
@@ -152,7 +165,8 @@ def score_candidate(c: dict, spec: JobSpec, ref_date: date) -> Scored:
         must_hits=len(must), nice_hits=len(nice), top_terms=must[:4],
         coherence=round(coh, 3), response=sig.get("recruiter_response_rate"),
         recency_days=recency_days, band_fit=round(bf, 3), honeypot=hp,
-        location=loc, disq=disq_flags)
+        location=loc, disq=disq_flags,
+        semantic=round(semantic_pct, 3) if semantic_pct is not None else None)
 
 
 def reference_date(path) -> date:
@@ -165,11 +179,36 @@ def reference_date(path) -> date:
     return ref
 
 
-def rank_pool(path, spec: JobSpec, top_n: int = 100):
+def load_semantic_pct(artifacts_dir) -> dict | None:
+    """Load precomputed embeddings (numpy only — no torch at rank time) and
+    return {candidate_id: semantic percentile in [0,1]} vs the JD query, or None
+    if artifacts are absent (lexical-only fallback)."""
+    import json
+    from pathlib import Path
+    d = Path(artifacts_dir)
+    ef, idf, qf = d / "cand_embeddings.npy", d / "cand_ids.json", d / "jd_query_emb.npy"
+    if not (ef.exists() and idf.exists() and qf.exists()):
+        return None
+    import numpy as np
+    from scipy.stats import rankdata
+    emb = np.load(ef)
+    q = np.load(qf)[0]
+    ids = json.loads(idf.read_text(encoding="utf-8"))
+    sims = emb @ q                       # cosine (vectors are L2-normalized)
+    pct = rankdata(sims, method="average") / len(sims)
+    return {cid: float(p) for cid, p in zip(ids, pct)}
+
+
+def rank_pool(path, spec: JobSpec, top_n: int = 100, artifacts_dir="artifacts",
+              sem_weight: float = SEM_WEIGHT):
     ref = reference_date(path)
-    scored = [score_candidate(c, spec, ref) for c in cio.iter_candidates(path)]
+    sem_pct = load_semantic_pct(artifacts_dir) if artifacts_dir else None
+    scored = []
+    for c in cio.iter_candidates(path):
+        sp = sem_pct.get(c["candidate_id"]) if sem_pct else None
+        scored.append(score_candidate(c, spec, ref, semantic_pct=sp, sem_weight=sem_weight))
     scored.sort(key=lambda s: (-s.score, s.cid))  # ties -> candidate_id ascending
-    return scored[:top_n], ref
+    return scored[:top_n], ref, (sem_pct is not None)
 
 
 def reasoning(s: Scored) -> str:
@@ -177,6 +216,8 @@ def reasoning(s: Scored) -> str:
     parts = [head]
     if s.top_terms:
         parts.append("narrative cites " + ", ".join(s.top_terms[:3]))
+    elif s.semantic is not None and s.semantic >= 0.9:
+        parts.append("strong semantic match to the role")
     parts.append(f"coherence {s.coherence:.2f}")
     if isinstance(s.response, (int, float)):
         parts.append(f"response {s.response:.2f}, active {s.recency_days}d ago")

@@ -42,3 +42,6 @@ CAND_0010294,0,honeypot: 144-month tenure vs 8y YOE
 CAND_0016000,0,flagged honeypot; junior FSD no ML regardless (detector may over-flag here)
 CAND_0018515,0,honeypot: 150-month tenure + scrambled marketing summary
 CAND_0019480,0,honeypot: YOE 2.8y but summary claims 7.4y and jobs sum ~7y — impossible despite great ranking/RAG text
+CAND_0008295,3,AI Research Eng 6.5y Pune; self-described lightweight/classical, sentiment-NLP + forecasting@TCS(services); IR tooling but off-focus career — hybrid over-ranked at #8
+CAND_0024549,2,AI Specialist 5.2y; Computer-Vision + forecasting generalist at Infosys(services); CV/object-detection skills, career not retrieval/ranking — over-ranked at #10
+CAND_0028527,2,AI Specialist 5.4y; CV (YOLO/OpenCV) + fraud at Tech Mahindra(services); has Vector Search skill but career is CV/fraud not retrieval

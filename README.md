@@ -108,9 +108,9 @@ Findings that shaped the system — each is a measured experiment, not a hunch:
 | metric | value |
 |---|---|
 | NDCG@10 | 1.00 (top-10 all hand-verified tier-5) |
-| NDCG@50 | ~0.95 |
+| NDCG@50 | ~0.99 |
 | MAP / P@10 | 1.00 / 1.00 |
-| Composite | ~0.985 |
+| Composite | ~0.996 |
 | Honeypot rate (top-100) | 0% (DQ threshold 10%) |
 | Runtime | ~35s for 100K, CPU-only, ≪16GB |
 

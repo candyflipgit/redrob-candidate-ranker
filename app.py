@@ -77,12 +77,14 @@ with gr.Blocks(title="Redrob Candidate Ranker") as demo:
         file_in = gr.File(label="candidates (.json / .jsonl) — optional",
                           file_types=[".json", ".jsonl"])
         top_n = gr.Slider(5, 100, value=20, step=5, label="top N")
-    btn = gr.Button("Rank", variant="primary")
+    btn = gr.Button("Rank the sample", variant="primary")
+    gr.Markdown("_First run downloads a small model (~20s), then it's instant._")
     out = gr.Dataframe(label="Ranked shortlist", wrap=True)
     btn.click(run, inputs=[file_in, top_n], outputs=out)
-    demo.load(run, inputs=[file_in, top_n], outputs=out)
+    # NOTE: no demo.load() auto-run — under Gradio SSR it executes during the HF
+    # health check and hangs the Space at APP_STARTING. User clicks to run.
 
 
 if __name__ == "__main__":
-    # ssr_mode=False: Gradio 5/6 SSR can hang at APP_STARTING on HF Spaces
-    demo.launch(ssr_mode=False)
+    # ssr_mode=False avoids the Gradio 5/6 SSR start-up hang on HF Spaces.
+    demo.launch(ssr_mode=False, server_name="0.0.0.0", server_port=7860)

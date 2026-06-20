@@ -1,0 +1,83 @@
+# Redrob Hackathon — Submission Metadata
+# TODO markers = fill before submitting via the portal.
+
+team_name: "TODO-your-team-name"
+
+primary_contact:
+  name: "Viraj Phad"
+  email: "phadviraj7@gmail.com"
+  phone: "TODO-+91-XXXXXXXXXX"
+
+team_members:
+  - name: "Viraj Phad"
+    email: "phadviraj7@gmail.com"
+    role: "Team Lead / Engineer"
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "TODO-https://github.com/USERNAME/REPO"
+
+sandbox_link: "TODO-hosted-demo-url"   # HF Space / Streamlit / Colab / Docker
+
+reproduce_command: "python scripts/rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+# Runs end-to-end on CPU in ~35s once embeddings exist in artifacts/.
+# Embeddings are produced offline (untimed) by: python scripts/precompute.py --candidates ./candidates.jsonl
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Local Windows workstation"
+  cpu_cores: 16
+  ram_gb: 16                          # TODO confirm actual RAM
+  python_version: "3.13.7"
+  os: "Windows 11"
+  uses_gpu_for_inference: false       # ranking is CPU-only
+  has_network_during_ranking: false   # no API calls during ranking
+  pre_computation_required: true      # candidate + JD embeddings (MiniLM-L6)
+  pre_computation_time_minutes: 23    # ~100K narratives on CPU
+
+# ============================================================================
+# AI tools declaration (transparency only; declared use is not penalized)
+# ============================================================================
+ai_tools_used:
+  - "Claude"        # Claude Code: pair-engineering, EDA, code, eval analysis
+
+ai_usage_summary: |
+  Built with Claude Code as a pair-engineering tool: exploratory data analysis,
+  code implementation, and reasoning about evaluation results. All architectural
+  decisions were driven by our own offline gold-anchored evaluation harness, and
+  every design choice is backed by a measured experiment (see git history and
+  README §4). No candidate data was sent to any hosted LLM; the ranking pipeline
+  makes no network/LLM calls.
+
+# ============================================================================
+# Approach summary (<=200 words)
+# ============================================================================
+methodology_summary: |
+  The dataset is adversarial: profiles are stitched from mismatched fields, so
+  keyword and pure-embedding matching rank stuffers #1. Our master signal is
+  internal coherence + JD-alignment across all fields. We parse the JD into a
+  faceted JobSpec, embed candidate narratives offline (MiniLM-L6), then rank on
+  CPU with a hybrid score: lexical+semantic alignment x cross-field coherence x a
+  trust layer that separates an IR *career* from IR *keywords* (it demotes
+  computer-vision/services generalists and self-described "lightweight" work) x
+  behavioural availability, minus a high-precision honeypot logic-sink. With no
+  live leaderboard and three submissions, our key deliverable is an offline eval
+  harness graded against 68 hand-read relevance labels; every change was accepted
+  only if it improved gold-anchored NDCG. This caught embeddings *hurting* at
+  first (they promoted keyword generalists) until a focused query + the trust
+  layer fixed it. Result: top-10 all hand-verified strong fits, 0% honeypots,
+  ~35s on CPU. Nothing is hardcoded to this JD/pool — the system re-derives its
+  target for any job.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true           # explicit logic-sink; 0% in top-100
+  reproduction_tested: true

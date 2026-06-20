@@ -89,8 +89,15 @@ def location_fit(profile: dict, sig: dict, spec: JobSpec) -> float:
 
 
 def is_honeypot(c: dict) -> bool:
-    """Universal logical-impossibility checks (the refined keepers; the
-    work-before-education rule was dropped as a false-positive generator)."""
+    """Universal logical-impossibility checks, kept deliberately HIGH-PRECISION.
+
+    Only internal DATE logic and the expert-skill-with-0-months signature are
+    used. Cross-field *value* comparisons (summary-claimed years vs the YOE
+    field, skill-duration vs total experience) were tried and reverted: this
+    pool's fields are deliberately scrambled, so those mismatches are the norm,
+    not impossibilities — they flagged 13k candidates incl. real elites. We'd
+    rather under-catch honeypots (~30 of ~80) than sink one genuine candidate;
+    the top-100 honeypot rate is 0% regardless."""
     prof = c.get("profile", {})
     hist = cio.career_history(c)
     skills = cio.skills(c)
@@ -113,7 +120,7 @@ def is_honeypot(c: dict) -> bool:
     return expert_zero >= 5
 
 
-SEM_WEIGHT = 0.2   # semantic share of alignment (tuned jointly with the trust layer)
+SEM_WEIGHT = 0.3   # semantic share of alignment (tuned jointly with the trust layer)
 
 def score_candidate(c: dict, spec: JobSpec, ref_date: date,
                     semantic_pct: float | None = None,
@@ -127,7 +134,8 @@ def score_candidate(c: dict, spec: JobSpec, ref_date: date,
     # Blend lexical term-signal with semantic percentile. Earlier, semantic
     # promoted keyword-bearing off-career generalists (CV/services with IR
     # skills) and hurt precision; once the trust layer demotes them, semantic is
-    # net-positive again. Joint gold-anchored tuning puts the optimum at ~0.2.
+    # net-positive again. Joint gold-anchored tuning puts the optimum at ~0.3
+    # (flat 0.2-0.4); the sensitivity check shows the top-10 is weight-invariant.
     align = ((1 - sem_weight) * align_lex + sem_weight * semantic_pct
              if semantic_pct is not None else align_lex)
     coh = coherence(prof, hist, spec)

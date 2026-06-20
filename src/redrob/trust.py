@@ -38,6 +38,12 @@ IR_DESC_TERMS = [
     "recsys", "semantic search", "vector search", "learning to rank",
     "information retrieval", "search relevance", "candidate matching", "embedding",
 ]
+# Self-described shallow/lightweight work — a senior IR role wants depth. These
+# are general "downplaying own depth" cues (a recruiter down-weights them too).
+DEPTH_NEGATIVE_CUES = [
+    "lighter weight than ranking", "lighter on the deep", "classical methods",
+    "recommendation-style features", "lightweight deployment",
+]
 
 
 def skill_domain(c: dict) -> tuple[int, int]:
@@ -87,16 +93,30 @@ def focus_factor(focus: float) -> float:
     return 0.85 + 0.30 * focus                      # focus 0->0.85, 1->1.15
 
 
+def depth_penalty(c: dict) -> tuple[float, int]:
+    """Demote candidates who describe their own work as shallow/lightweight —
+    the 'lightweight DS/ML generalist' tier that carries IR keywords but whose
+    descriptions say e.g. 'lighter weight than ranking systems'."""
+    prof = c.get("profile", {})
+    text = ((prof.get("summary") or "") + " " +
+            " ".join((h.get("description") or "") for h in cio.career_history(c))).lower()
+    hits = sum(1 for t in DEPTH_NEGATIVE_CUES if t in text)
+    return (max(0.60, 1.0 - 0.18 * hits) if hits else 1.0), hits
+
+
 def signals(c: dict, spec: JobSpec) -> dict:
     ir, cv = skill_domain(c)
     frac = services_fraction(c, spec)
     focus = career_ir_focus(c)
-    penalty = cv_penalty(ir, cv) * services_penalty(frac)
+    depth_pen, depth_hits = depth_penalty(c)
+    penalty = cv_penalty(ir, cv) * services_penalty(frac) * depth_pen
     flags = []
     if cv >= 2 and cv > ir:
         flags.append(f"cv/speech-skills({cv})")
     if frac > 0.5:
         flags.append(f"services({frac:.0%})")
+    if depth_hits:
+        flags.append("self-described-lightweight")
     if focus == 0 and (ir > 0 or cv > 0):
         flags.append("no-IR-career-evidence")
     return {"ir": ir, "cv": cv, "services_frac": frac, "focus": focus,

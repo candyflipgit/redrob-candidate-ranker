@@ -16,7 +16,7 @@ team_members:
 # ============================================================================
 # Code and reproducibility
 # ============================================================================
-github_repo: "TODO-https://github.com/USERNAME/REPO"
+github_repo: "https://github.com/candyflipgit/redrob-candidate-ranker"
 
 sandbox_link: "TODO-hosted-demo-url"   # HF Space / Streamlit / Colab / Docker
 

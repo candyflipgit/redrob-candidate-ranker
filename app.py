@@ -84,4 +84,5 @@ with gr.Blocks(title="Redrob Candidate Ranker") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch()
+    # ssr_mode=False: Gradio 5/6 SSR can hang at APP_STARTING on HF Spaces
+    demo.launch(ssr_mode=False)

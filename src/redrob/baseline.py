@@ -1,0 +1,193 @@
+"""Text-only baseline ranker (walking skeleton).
+
+Scores every candidate against a JobSpec using only lexical/structural signals —
+no embeddings yet. Its job is to prove the end-to-end path (stream -> score ->
+top-100 -> valid CSV) and give us an always-working fallback submission that the
+embedding + tiered-scoring versions must then beat on the offline eval harness.
+
+The four pillars (see approach memory): JD-alignment and internal-coherence are
+the additive core; availability is a multiplicative modifier; the honeypot/trust
+checks are a near-zero sink. All logic is general (driven by the JobSpec + the
+pool), nothing hardcoded to a specific candidate.
+"""
+from __future__ import annotations
+
+import math
+import re
+from collections import namedtuple
+from datetime import date
+
+from . import io as cio
+from .jobspec import JobSpec
+
+# Stuffer "tell": summaries stitched from a different role than the profile.
+_SCRAMBLE_TELL = re.compile(
+    r"background is in|i've spent my career in|my professional background|"
+    r"i'm a .{0,40}? with substantial experience", re.I)
+# Title actually denotes an ML/AI/IR practitioner.
+_ML_ROLE = re.compile(
+    r"\b(ml|ai|machine learning|nlp|data scientist|applied scientist|"
+    r"research engineer|search engineer|recommendation)\b", re.I)
+
+Scored = namedtuple(
+    "Scored",
+    "score cid title yoe must_hits nice_hits top_terms coherence response "
+    "recency_days band_fit honeypot location disq")
+
+
+def _present(terms, text_l):
+    return [t for t in terms if t in text_l]
+
+
+def alignment(narrative_l: str, spec: JobSpec):
+    must = _present(spec.must_have_terms, narrative_l)
+    nice = _present(spec.nice_to_have_terms, narrative_l)
+    weighted = len(must) + 0.5 * len(nice)
+    return 1.0 - math.exp(-weighted / 6.0), must, nice
+
+
+def coherence(profile: dict, hist: list, spec: JobSpec) -> float:
+    summary_l = (profile.get("summary") or "").lower()
+    desc_l = " ".join((h.get("description") or "") for h in hist).lower()
+    title_l = (profile.get("current_title") or "").lower()
+    pos = spec.positive_query()
+    summary_jd = any(t in summary_l for t in pos)
+    desc_jd = any(t in desc_l for t in pos)
+    title_role = bool(_ML_ROLE.search(title_l))
+    scramble = 1.0 if _SCRAMBLE_TELL.search(summary_l) else 0.0
+    base = 0.40 * summary_jd + 0.40 * desc_jd + 0.20 * title_role
+    return base * (1.0 - 0.7 * scramble)
+
+
+def availability(sig: dict, ref_date: date):
+    r = sig.get("recruiter_response_rate")
+    r = r if isinstance(r, (int, float)) else 0.3
+    la = cio.parse_date(sig.get("last_active_date"))
+    recency_days = (ref_date - la).days if (la and ref_date) else 180
+    recency_factor = max(0.0, min(1.0, 1.0 - recency_days / 180.0))
+    open_w = 1.0 if sig.get("open_to_work_flag") else 0.0
+    verified = 0.5 * (bool(sig.get("verified_email")) + bool(sig.get("verified_phone")))
+    base = 0.45 * r + 0.35 * recency_factor + 0.15 * open_w + 0.05 * verified
+    return 0.40 + 0.70 * base, recency_days  # multiplier in ~[0.40, 1.10]
+
+
+def band_fit(yoe, spec: JobSpec) -> float:
+    if not isinstance(yoe, (int, float)):
+        return 0.8
+    over = max(0.0, spec.min_years - yoe) + max(0.0, yoe - spec.max_years)
+    return 1.0 / (1.0 + 0.25 * over)
+
+
+def location_fit(profile: dict, sig: dict, spec: JobSpec) -> float:
+    loc = f"{profile.get('location','')} {profile.get('country','')}".lower()
+    if any(c in loc for c in spec.locations):
+        return 1.0
+    if spec.relocate_ok and sig.get("willing_to_relocate"):
+        return 0.8
+    return 0.45
+
+
+def disqualifier_mult(hist: list, narrative_l: str, spec: JobSpec):
+    mult, flags = 1.0, []
+    svc = spec.disqualifiers.get("services_only")
+    if svc:
+        comps = [(h.get("company") or "").lower() for h in hist]
+        if comps and all(any(s in c for s in svc) for c in comps):
+            mult *= 0.6
+            flags.append("services_only")
+    wd = spec.disqualifiers.get("wrong_domain")
+    if wd and any(t in narrative_l for t in wd) and not _present(spec.must_have_terms, narrative_l):
+        mult *= 0.7
+        flags.append("wrong_domain")
+    return mult, flags
+
+
+def is_honeypot(c: dict) -> bool:
+    """Universal logical-impossibility checks (the refined keepers; the
+    work-before-education rule was dropped as a false-positive generator)."""
+    prof = c.get("profile", {})
+    hist = cio.career_history(c)
+    skills = cio.skills(c)
+    yoe = prof.get("years_of_experience")
+
+    total = sum(int(h.get("duration_months") or 0) for h in hist)
+    if isinstance(yoe, (int, float)) and total > (yoe + 2) * 12 + 6:
+        return True
+    for h in hist:
+        sd, ed = cio.parse_date(h.get("start_date")), cio.parse_date(h.get("end_date"))
+        if sd and ed:
+            span = (ed.year - sd.year) * 12 + (ed.month - sd.month)
+            if span < -1 or abs(span - int(h.get("duration_months") or 0)) > 18:
+                return True
+        if h.get("is_current") and h.get("end_date"):
+            return True
+    expert_zero = sum(1 for s in skills
+                      if s.get("proficiency") == "expert"
+                      and int(s.get("duration_months") or 0) == 0)
+    return expert_zero >= 5
+
+
+def score_candidate(c: dict, spec: JobSpec, ref_date: date) -> Scored:
+    prof = c.get("profile", {})
+    hist = cio.career_history(c)
+    sig = cio.signals(c)
+    narrative_l = cio.narrative_text(c).lower()
+
+    align, must, nice = alignment(narrative_l, spec)
+    coh = coherence(prof, hist, spec)
+    avail, recency_days = availability(sig, ref_date)
+    bf = band_fit(prof.get("years_of_experience"), spec)
+    loc = location_fit(prof, sig, spec)
+    disq_mult, disq_flags = disqualifier_mult(hist, narrative_l, spec)
+    hp = is_honeypot(c)
+
+    fit = 0.55 * align + 0.45 * coh
+    base = fit * bf * (0.85 + 0.15 * loc) * disq_mult
+    final = base * avail * (0.02 if hp else 1.0)
+
+    return Scored(
+        score=round(final, 6), cid=c["candidate_id"],
+        title=prof.get("current_title") or "?",
+        yoe=prof.get("years_of_experience"),
+        must_hits=len(must), nice_hits=len(nice), top_terms=must[:4],
+        coherence=round(coh, 3), response=sig.get("recruiter_response_rate"),
+        recency_days=recency_days, band_fit=round(bf, 3), honeypot=hp,
+        location=loc, disq=disq_flags)
+
+
+def reference_date(path) -> date:
+    """Pool-relative 'today' = latest last_active_date (self-calibrating)."""
+    ref = date(1970, 1, 1)
+    for c in cio.iter_candidates(path):
+        la = cio.parse_date(cio.signals(c).get("last_active_date"))
+        if la and la > ref:
+            ref = la
+    return ref
+
+
+def rank_pool(path, spec: JobSpec, top_n: int = 100):
+    ref = reference_date(path)
+    scored = [score_candidate(c, spec, ref) for c in cio.iter_candidates(path)]
+    scored.sort(key=lambda s: (-s.score, s.cid))  # ties -> candidate_id ascending
+    return scored[:top_n], ref
+
+
+def reasoning(s: Scored) -> str:
+    head = f"{s.title}, {s.yoe:.1f}y" if isinstance(s.yoe, (int, float)) else s.title
+    parts = [head]
+    if s.top_terms:
+        parts.append("narrative cites " + ", ".join(s.top_terms[:3]))
+    parts.append(f"coherence {s.coherence:.2f}")
+    if isinstance(s.response, (int, float)):
+        parts.append(f"response {s.response:.2f}, active {s.recency_days}d ago")
+    concerns = []
+    if s.band_fit < 0.85:
+        concerns.append("experience outside 5-9y band")
+    if s.disq:
+        concerns.append("/".join(s.disq))
+    if s.honeypot:
+        concerns.append("inconsistent profile (flagged)")
+    text = "; ".join(parts)
+    if concerns:
+        text += ". Concerns: " + ", ".join(concerns)
+    return text[:240]

@@ -18,7 +18,7 @@ team_members:
 # ============================================================================
 github_repo: "https://github.com/candyflipgit/redrob-candidate-ranker"
 
-sandbox_link: "TODO-hosted-demo-url"   # HF Space / Streamlit / Colab / Docker
+sandbox_link: "https://huggingface.co/spaces/candyfliphf/redrob-ranker"
 
 reproduce_command: "python scripts/rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 # Runs end-to-end on CPU in ~35s once embeddings exist in artifacts/.

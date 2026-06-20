@@ -1,12 +1,12 @@
 # Redrob Hackathon — Submission Metadata
 # TODO markers = fill before submitting via the portal.
 
-team_name: "TODO-your-team-name"
+team_name: "dolphin"
 
 primary_contact:
   name: "Viraj Phad"
   email: "phadviraj7@gmail.com"
-  phone: "TODO-+91-XXXXXXXXXX"
+  phone: "+91-7219534793"
 
 team_members:
   - name: "Viraj Phad"
@@ -30,7 +30,7 @@ reproduce_command: "python scripts/rank.py --candidates ./candidates.jsonl --out
 compute:
   platform: "Local Windows workstation"
   cpu_cores: 16
-  ram_gb: 16                          # TODO confirm actual RAM
+  ram_gb: 24
   python_version: "3.13.7"
   os: "Windows 11"
   uses_gpu_for_inference: false       # ranking is CPU-only

@@ -1,0 +1,8 @@
+# OFFLINE pre-computation dependencies (embedding the candidate pool + the JD).
+# This step is untimed and may use network/GPU to DOWNLOAD a model, but produces
+# only static .npy artifacts that the ranking step consumes. Keep separate from
+# requirements.txt so the Stage-3 ranking reproduction stays minimal.
+-r requirements.txt
+sentence-transformers>=3.0
+torch>=2.2,<3            # CPU build is fine: pip install torch --index-url https://download.pytorch.org/whl/cpu
+rank-bm25>=0.2.2

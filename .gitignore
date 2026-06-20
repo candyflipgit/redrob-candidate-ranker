@@ -1,0 +1,21 @@
+# Provided dataset (large; not ours to redistribute) — place these in repo root locally
+candidates.jsonl
+candidates.jsonl.gz
+
+# Generated artifacts (reproducible from precompute step)
+artifacts/
+*.npy
+*.parquet
+
+# Scratch / temp
+_*.txt
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/

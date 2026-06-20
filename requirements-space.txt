@@ -1,0 +1,11 @@
+# Dependencies for the HuggingFace Space sandbox (app.py).
+# The Space embeds a small sample live, so it needs torch + sentence-transformers
+# (unlike the lean ranking-step requirements.txt used for Stage-3 reproduction).
+gradio>=4.0
+sentence-transformers>=3.0
+torch>=2.2
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.3
+PyYAML>=6.0

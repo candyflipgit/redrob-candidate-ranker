@@ -19,3 +19,5 @@ venv/
 *.egg-info/
 .pytest_cache/
 .ipynb_checkpoints/
+.gradio/
+flagged/

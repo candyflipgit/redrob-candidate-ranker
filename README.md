@@ -143,7 +143,30 @@ eval/          holdout_labels.csv (hand-read gold)
 artifacts/     generated embeddings (gitignored; produced by precompute)
 ```
 
-## 8. Generalization & limitations
+## 8. Live demo (HuggingFace Space)
+
+`app.py` is a Gradio sandbox that embeds a small sample **live** and runs the full
+pipeline end-to-end (the Stage-3 small-sample check). Run locally with
+`python app.py`. To deploy as a HuggingFace Space:
+
+1. Create a new Space → SDK **Gradio**.
+2. Put these in the Space repo: `app.py`, `src/redrob/`, `job_spec.yaml`,
+   `sample_candidates.json`, and `requirements.txt` (use the contents of
+   `requirements-space.txt`).
+3. Prepend this header to the Space's `README.md`:
+   ```
+   ---
+   title: Redrob Candidate Ranker
+   emoji: 🎯
+   colorFrom: indigo
+   colorTo: blue
+   sdk: gradio
+   app_file: app.py
+   pinned: false
+   ---
+   ```
+
+## 9. Generalization & limitations
 
 **General by construction:** the JobSpec is parsed from JD text; trust/coherence
 are universal logic + a reusable domain ontology; scoring self-calibrates to the

@@ -1,0 +1,44 @@
+candidate_id,tier,note
+CAND_0077337,5,Staff MLE 7y Kochi; recsys@Paytm + semantic search@Razorpay + embedding search@Glance; resp .95 active 1d — perfect
+CAND_0046525,5,Senior MLE 6.1y Pune; LinkedIn RAG recruiter-search ranking; in-band; open+relocate — bullseye
+CAND_0055905,5,Senior MLE 8.1y; Flipkart semantic search + Uber LoRA candidate-JD matching + RAG ranking; elite (London, relocate=no)
+CAND_0070525,4,Senior SWE(ML) 5.4y Hyderabad; NLP pipelines + recsys but self-described lighter-weight than FAANG ranking
+CAND_0018499,5,Senior MLE 7.2y Noida; Zomato RAG ranking + Google Staff + Flipkart LoRA matching; elite
+CAND_0081846,5,Lead AI Eng 6.7y; Razorpay RAG ranking + Paytm semantic search; elite
+CAND_0011687,5,Senior NLP Eng 7.8y; end-to-end ranking pipeline + LoRA matching; elite
+CAND_0002025,5,Senior AI Eng 5.9y; Apple recsys + Aganitha LoRA; elite, active 1d
+CAND_0046064,5,Senior NLP Eng 8.9y; Amazon Search&Ranking + Verloop RAG ranking; elite (band edge)
+CAND_0090300,3,AI Research Eng 5.3y SF; time-series forecasting + CV@HCL(services) + some NLP — off-focus, ranker over-ranked at #10
+CAND_0067866,4,Senior SWE(ML) 6.4y Noida; genuine MLE but fraud/NLP not retrieval + one services stint
+CAND_0072688,3,Data Scientist 6.9y Pune; CV-heavy (image moderation, ResNet) + NLP; not retrieval-focused
+CAND_0004989,0,Project Manager 12.6y; scrambled (marketing summary, brand/ops jobs, TCS); over-band — sample_submission #1 trap
+CAND_0001195,1,Cloud Engineer 1.7y; coherent junior SWE (mobile/frontend) but zero ML/IR
+CAND_0003114,0,Mechanical Engineer; marketing-manager summary, customer-support/sales jobs — scrambled
+CAND_0000339,0,HR Manager 1.6y; marketing-manager summary, consulting job — scrambled non-fit
+CAND_0001082,2,Software Engineer 6.8y; coherent data-eng/pipelines, ~30% light DS — adjacent, no real ML/retrieval
+CAND_0001218,3,AI Specialist 6.4y; recsys features but CV-heavy + Tech Mahindra services; silver over-rated this (5)
+CAND_0004558,1,Frontend Engineer 6.8y; frontend/mobile/Java at Tech Mahindra — no ML
+CAND_0001753,0,Mechanical Engineer; marketing-manager summary, accounting/BA jobs at TCS — scrambled
+CAND_0001503,0,Content Writer 13.1y; marketing-manager summary, scrambled jobs
+CAND_0004548,0,Accountant 11y; scrambled (sales/BA/design at TCS/Infosys)
+CAND_0010685,5,NLP Engineer 6.7y; learning-to-rank@Rephrase + semantic search (sentence-transformers) + ranking models — elite, silver under-rated (4)
+CAND_0020877,4,Applied ML Eng 5.1y; semantic search (sentence-transformers) + RAG chatbot; strong, slightly less ranking-focused
+CAND_0029336,3,ML Engineer 3.8y; genuine ML (fraud/forecasting) but off-focus + under-band
+CAND_0037417,2,Data Scientist 3.3y; CV-heavy (ResNet) + junior
+CAND_0042370,3,Data Scientist 3.3y; CRED recsys features but junior/under-band
+CAND_0011162,5,Recommendation Systems Engineer 5.8y; learning-to-rank@Google + ranking models@upGrad/Meesho — elite, silver badly under-rated (3)
+CAND_0020708,4,Search Engineer 4.2y; semantic search (sentence-transformers) but single job + under-band
+CAND_0030031,5,AI Engineer 5.7y; content recsys (CF+content ranking)@Microsoft + Search/ranking@Google — elite, silver under-rated (3)
+CAND_0052679,3,Senior SWE(ML) 4.5y; fraud-detection ML at TCS (54mo services) + under-band
+CAND_0066690,3,ML Engineer 4.8y; NLP pipelines + forecasting, not retrieval-focused
+CAND_0000333,1,Software Engineer 7.4y; Java backend/QA/cloud — no ML
+CAND_0000411,2,Analytics Engineer 2.8y; data warehouse/pipelines — data-adjacent, no ML, junior
+CAND_0000745,1,Mobile Developer 7.4y; Wipro/Infosys services, QA/frontend — no ML
+CAND_0000828,0,Project Manager 10.1y; scrambled (accounting/support/content at TCS/Wipro)
+CAND_0000839,0,Mechanical Engineer 10.9y; scrambled services jobs
+CAND_0007353,0,honeypot: 166-month single tenure vs 9.9y YOE — logically impossible
+CAND_0008960,0,honeypot: 171-month tenure + scrambled marketing summary
+CAND_0010294,0,honeypot: 144-month tenure vs 8y YOE
+CAND_0016000,0,flagged honeypot; junior FSD no ML regardless (detector may over-flag here)
+CAND_0018515,0,honeypot: 150-month tenure + scrambled marketing summary
+CAND_0019480,0,honeypot: YOE 2.8y but summary claims 7.4y and jobs sum ~7y — impossible despite great ranking/RAG text

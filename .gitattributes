@@ -1,0 +1,6 @@
+# Keep GitHub's language stats focused on the actual source (Python).
+# These files are large but are generated artifacts / bundled data, not source.
+redrob_colab_demo.ipynb linguist-generated=true
+sample_candidates.json  linguist-generated=true
+*.csv                   linguist-data
+job_spec.yaml           linguist-data
